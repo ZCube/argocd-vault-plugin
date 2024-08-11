@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -19,7 +21,7 @@ import (
 // NewGenerateCommand initializes the generate command
 func NewGenerateCommand() *cobra.Command {
 	const StdIn = "-"
-	var configPath, secretName string
+	var configPath, secretName, secretDir string
 	var verboseOutput bool
 
 	var command = &cobra.Command{
@@ -63,9 +65,39 @@ func NewGenerateCommand() *cobra.Command {
 
 			v := viper.New()
 			viper.Set("verboseOutput", verboseOutput)
+
+			if envSecretDir := strings.TrimSpace(v.GetString(types.EnvAvpSecretDir)); envSecretDir != "" {
+				secretDir = envSecretDir
+			}
+
+			cwd, err := os.Getwd()
+			if err != nil {
+				return fmt.Errorf("could not get current working directory: %s", err)
+			}
+
+			switch secretDir {
+			case "":
+				secretDir = cwd
+			default:
+				if !filepath.IsAbs(secretDir) {
+					if strings.HasPrefix(secretDir, "GIT_ROOT") {
+						secretDir = strings.TrimPrefix(secretDir, "GIT_ROOT")
+						secretDir = strings.TrimLeft(secretDir, "/\\")
+						gitRoot, err := detectGitPath(cwd)
+						if err != nil {
+							return err
+						}
+						secretDir = filepath.Clean(filepath.Join(filepath.Dir(gitRoot), secretDir))
+					} else {
+						secretDir = filepath.Clean(filepath.Join(cwd, secretDir))
+					}
+				}
+			}
+
 			cmdConfig, err := config.New(v, &config.Options{
 				SecretName: secretName,
 				ConfigPath: configPath,
+				SecretDir:  secretDir,
 			})
 			if err != nil {
 				return err
@@ -115,6 +147,7 @@ func NewGenerateCommand() *cobra.Command {
 
 	command.Flags().StringVarP(&configPath, "config-path", "c", "", "path to a file containing Vault configuration (YAML, JSON, envfile) to use")
 	command.Flags().StringVarP(&secretName, "secret-name", "s", "", "name of a Kubernetes Secret in the argocd namespace containing Vault configuration data in the argocd namespace of your ArgoCD host (Only available when used in ArgoCD). The namespace can be overridden by using the format <namespace>:<name>")
+	command.Flags().StringVarP(&secretDir, "secret-dir", "d", "", "Specify the path to a directory containing secrets for use with SOPS-encrypted files. If set to GIT_ROOT, the root of the Git repository will be used; otherwise, the current working directory will be used as a fallback.")
 	command.Flags().BoolVar(&verboseOutput, "verbose-sensitive-output", false, "enable verbose mode for detailed info to help with debugging. Includes sensitive data (credentials), logged to stderr")
 	return command
 }

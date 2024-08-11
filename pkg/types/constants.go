@@ -6,6 +6,7 @@ const (
 
 	// Environment Variable Constants
 	EnvAvpType             = "AVP_TYPE"
+	EnvAvpSecretDir        = "AVP_SECRET_DIR"
 	EnvAvpRoleID           = "AVP_ROLE_ID"
 	EnvAvpSecretID         = "AVP_SECRET_ID"
 	EnvAvpAuthType         = "AVP_AUTH_TYPE"

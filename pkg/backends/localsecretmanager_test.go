@@ -18,7 +18,7 @@ func TestLocalSecretManagerGetSecretsJson(t *testing.T) {
 			"test-secret": "current-value",
 		}
 		return json.Marshal(data)
-	})
+	}, "")
 
 	t.Run("Get secrets", func(t *testing.T) {
 
@@ -57,7 +57,7 @@ func TestLocalSecretManagerGetSecretsYaml(t *testing.T) {
 			"test-secret": "current-value",
 		}
 		return yaml.Marshal(data)
-	})
+	}, "")
 
 	t.Run("Get secrets", func(t *testing.T) {
 		data, err := sm.GetSecrets("example.yaml", "", map[string]string{})
@@ -78,7 +78,7 @@ func TestLocalSecretManagerGetSecretsYaml(t *testing.T) {
 func TestLocalSecretManagerPathNotFound(t *testing.T) {
 	sm := backends.NewLocalSecretManagerBackend(func(path string, format string) ([]byte, error) {
 		return nil, fmt.Errorf("File %s not found", path)
-	})
+	}, "")
 
 	_, err := sm.GetSecrets("empty", "", map[string]string{})
 	if err == nil {

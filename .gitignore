@@ -5,6 +5,7 @@ bin
 test
 local
 cover.out
+dist
 
 # Project workspaces
 .idea

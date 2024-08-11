@@ -1,3 +1,4 @@
+version: 2
 project_name: "argocd-vault-plugin"
 
 builds:
@@ -13,12 +14,15 @@ builds:
     goos:
       - darwin
       - linux
+      - windows
     goarch:
       - amd64
       - arm64
       - s390x
     ignore:
       - goos: darwin
+        goarch: s390x
+      - goos: windows
         goarch: s390x
     tags:
       - netgo
@@ -28,4 +32,4 @@ archives:
   - format: binary
 
 changelog:
-  skip: true
+  disable: true

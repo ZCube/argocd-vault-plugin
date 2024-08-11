@@ -2,6 +2,7 @@ package backends
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/argoproj-labs/argocd-vault-plugin/pkg/utils"
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -12,13 +13,15 @@ type decryptFunc func(path string, filetype string) ([]byte, error)
 // LocalSecretManager is a struct for working with local files
 // Receives a function that knows how to decrypt the file, f.ex. using sops
 type LocalSecretManager struct {
-	Decrypt decryptFunc
+	Decrypt   decryptFunc
+	SecretDir string
 }
 
 // NewLocalSecretManagerBackend initializes a new local secret backend
-func NewLocalSecretManagerBackend(decrypt decryptFunc) *LocalSecretManager {
+func NewLocalSecretManagerBackend(decrypt decryptFunc, secretDir string) *LocalSecretManager {
 	return &LocalSecretManager{
-		Decrypt: decrypt,
+		Decrypt:   decrypt,
+		SecretDir: secretDir,
 	}
 }
 
@@ -30,6 +33,9 @@ func (a *LocalSecretManager) Login() error {
 // GetSecrets gets secrets using decrypt function and returns the formatted data
 func (a *LocalSecretManager) GetSecrets(path string, version string, annotations map[string]string) (map[string]interface{}, error) {
 	utils.VerboseToStdErr("Local secret manager getting secret %s at version %s", path, version)
+	if a.SecretDir != "" {
+		path = filepath.Join(a.SecretDir, path)
+	}
 	cleartext, err := a.Decrypt(path, "yaml")
 
 	utils.VerboseToStdErr("Local secret manager get secret response: %v", cleartext)

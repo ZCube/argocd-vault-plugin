@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azsecrets"
 	"os"
 	"strconv"
 	"strings"
@@ -13,6 +12,7 @@ import (
 	gcpsm "cloud.google.com/go/secretmanager/apiv1"
 	"github.com/1Password/connect-sdk-go/connect"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azsecrets"
 	delineasecretserver "github.com/DelineaXPM/tss-sdk-go/v2/server"
 	"github.com/IBM/go-sdk-core/v5/core"
 	ibmsm "github.com/IBM/secrets-manager-go-sdk/secretsmanagerv2"
@@ -28,6 +28,7 @@ import (
 	"github.com/spf13/viper"
 	ycsdk "github.com/yandex-cloud/go-sdk"
 	"github.com/yandex-cloud/go-sdk/iamkey"
+	age "go.mozilla.org/sops/v3/age"
 	sops "go.mozilla.org/sops/v3/decrypt"
 )
 
@@ -35,6 +36,7 @@ import (
 type Options struct {
 	SecretName string
 	ConfigPath string
+	SecretDir  string
 }
 
 // Config is used to decide the backend and auth type
@@ -199,7 +201,10 @@ func New(v *viper.Viper, co *Options) (*Config, error) {
 		}
 	case types.Sopsbackend:
 		{
-			backend = backends.NewLocalSecretManagerBackend(sops.File)
+			if val := v.GetString(age.SopsAgeKeyFileEnv); val != "" {
+				os.Setenv(age.SopsAgeKeyFileEnv, val)
+			}
+			backend = backends.NewLocalSecretManagerBackend(sops.File, co.SecretDir)
 		}
 	case types.YandexCloudLockboxbackend:
 		{
